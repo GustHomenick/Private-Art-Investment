@@ -1,9 +1,15 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.24;
 
-import { FHE, FHEVMConfigStruct, SepoliaConfig } from "./LocalFHE.sol";
+import { FHE, euint32 } from "@fhevm/solidity/lib/FHE.sol";
+import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
 
-contract PrivateArtInvestment is SepoliaConfig {
+/**
+ * @title PrivateArtInvestment
+ * @notice Privacy-preserving art collection investment platform using FHE encryption
+ * @dev Demonstrates homomorphic encryption patterns for confidential investments
+ */
+contract PrivateArtInvestment is ZamaEthereumConfig {
 
     address public owner;
     uint256 public totalArtworks;
@@ -23,15 +29,15 @@ contract PrivateArtInvestment is SepoliaConfig {
     }
 
     struct PrivateInvestment {
-        FHE.euint32 encryptedShares;       // FHE encrypted share amount
-        FHE.euint32 encryptedValue;        // FHE encrypted investment value
+        euint32 encryptedShares;       // FHE encrypted share amount
+        euint32 encryptedValue;        // FHE encrypted investment value
         bool hasInvested;
         uint256 timestamp;
     }
 
     struct InvestorProfile {
-        FHE.euint32 encryptedTotalInvestment;    // FHE encrypted total investment
-        FHE.euint32 encryptedPortfolioCount;     // FHE encrypted portfolio count
+        euint32 encryptedTotalInvestment;    // FHE encrypted total investment
+        euint32 encryptedPortfolioCount;     // FHE encrypted portfolio count
         bool isRegistered;
         uint256 registeredAt;
     }
@@ -86,8 +92,8 @@ contract PrivateArtInvestment is SepoliaConfig {
         require(!investorProfiles[msg.sender].isRegistered, "Already registered");
 
         // Initialize with encrypted zeros using FHE
-        FHE.euint32 memory zeroInvestment = FHE.asEuint32(0);
-        FHE.euint32 memory zeroPortfolio = FHE.asEuint32(0);
+        euint32 zeroInvestment = FHE.asEuint32(0);
+        euint32 zeroPortfolio = FHE.asEuint32(0);
 
         investorProfiles[msg.sender] = InvestorProfile({
             encryptedTotalInvestment: zeroInvestment,
@@ -151,8 +157,8 @@ contract PrivateArtInvestment is SepoliaConfig {
         require(msg.value >= requiredPayment, "Insufficient payment");
 
         // Encrypt the investment data using FHE
-        FHE.euint32 memory encryptedShares = FHE.asEuint32(shareAmount);
-        FHE.euint32 memory encryptedValue = FHE.asEuint32(uint32(msg.value / 1e14)); // Scale down for euint32
+        euint32 encryptedShares = FHE.asEuint32(shareAmount);
+        euint32 encryptedValue = FHE.asEuint32(uint32(msg.value / 1e14)); // Scale down for euint32
 
         artworkInvestments[artworkId][msg.sender] = PrivateInvestment({
             encryptedShares: encryptedShares,
@@ -165,8 +171,8 @@ contract PrivateArtInvestment is SepoliaConfig {
         artworks[artworkId].availableShares -= shareAmount;
 
         // Update investor profile with FHE operations
-        FHE.euint32 memory currentTotal = investorProfiles[msg.sender].encryptedTotalInvestment;
-        FHE.euint32 memory currentPortfolio = investorProfiles[msg.sender].encryptedPortfolioCount;
+        euint32 currentTotal = investorProfiles[msg.sender].encryptedTotalInvestment;
+        euint32 currentPortfolio = investorProfiles[msg.sender].encryptedPortfolioCount;
 
         investorProfiles[msg.sender].encryptedTotalInvestment = FHE.add(currentTotal, encryptedValue);
         investorProfiles[msg.sender].encryptedPortfolioCount = FHE.add(currentPortfolio, FHE.asEuint32(1));
@@ -308,8 +314,8 @@ contract PrivateArtInvestment is SepoliaConfig {
 
     // FHE-specific function to get encrypted investment summary
     function getEncryptedInvestmentSummary(address user) external view returns (
-        FHE.euint32 memory encryptedTotalInvested,
-        FHE.euint32 memory encryptedPortfolioCount,
+        euint32 encryptedTotalInvested,
+        euint32 encryptedPortfolioCount,
         bool isRegistered
     ) {
         InvestorProfile storage profile = investorProfiles[user];
@@ -321,7 +327,7 @@ contract PrivateArtInvestment is SepoliaConfig {
     }
 
     // Function to get encrypted shares for a specific investment
-    function getEncryptedShares(address investor, uint256 artworkId) external view returns (FHE.euint32 memory) {
+    function getEncryptedShares(address investor, uint256 artworkId) external view returns (euint32) {
         return artworkInvestments[artworkId][investor].encryptedShares;
     }
 
